@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ZSGit Name Storage</title>
+  <script src="https://cdn.jsdelivr.net/gh/zs-3/zsgit@main/zsgit.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 500px; }
+    input, button { padding: 8px; font-size: 16px; margin-top: 10px; }
+    ul { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Store and Read Names using GitHub</h2>
+
+  <input type="text" id="nameInput" placeholder="Enter your name" />
+  <button onclick="saveName()">Save Name</button>
+
+  <h3>Saved Names:</h3>
+  <ul id="nameList">Loading...</ul>
+
+  <script>
+    const git = new ZSGit({
+      owner: "your-username",   // Replace with your GitHub username
+      repo: "your-repo",        // Replace with your GitHub repo
+      token: "ghp_your_token"   // Replace with your GitHub token
+    });
+
+    const filePath = "names.json";
+
+    async function loadNames() {
+      try {
+        const { content } = await git.getFile(filePath);
+        const names = JSON.parse(content);
+        displayNames(names);
+      } catch (e) {
+        if (e.message.includes("404")) {
+          await git.writeFile(filePath, JSON.stringify([]), "Init names.json");
+          displayNames([]);
+        } else {
+          document.getElementById("nameList").innerHTML = "Error loading names.";
+          console.error(e);
+        }
+      }
+    }
+
+    function displayNames(names) {
+      const ul = document.getElementById("nameList");
+      ul.innerHTML = "";
+      names.forEach(name => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        ul.appendChild(li);
+      });
+    }
+
+    async function saveName() {
+      const input = document.getElementById("nameInput");
+      const newName = input.value.trim();
+      if (!newName) return alert("Please enter a name.");
+
+      const { content } = await git.getFile(filePath);
+      const names = JSON.parse(content);
+      names.push(newName);
+      await git.writeFile(filePath, JSON.stringify(names), `Add name: ${newName}`);
+      input.value = "";
+      displayNames(names);
+    }
+
+    loadNames();
+  </script>
+</body>
+</html>
